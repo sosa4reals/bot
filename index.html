@@ -270,13 +270,10 @@
             sendCMD("sale", cart);
         });
 
-        // ПОЧИНЕНО ДЛЯ ЧАТА: Используем проброс команды в диалог
         function sendCMD(action, payload = {}) {
-            const dataObj = { action: action, payload: payload };
-            // Из-за ограничений Telegram вшиваем текстовый вывод
-            tg.sendData(JSON.stringify(dataObj));
-            tg.close();
-        }
+    const dataObj = { action: action, payload: payload };
+    tg.sendData(JSON.stringify(dataObj));
+}
 
         function switchTab(tabId, btn) {
             document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
