@@ -187,7 +187,7 @@
             const query = document.getElementById('search').value.toLowerCase();
             document.querySelectorAll('.p-item').forEach(item => {
                 const sMatch = item.dataset.name.includes(query);
-                const cMatch = item.dataset.category === currentCategory;
+                const cMatch = true;
                 if (query.length > 0) {
                     if (sMatch) item.classList.remove('hidden'); else item.classList.add('hidden');
                 } else {
