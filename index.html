@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -19,12 +20,10 @@
         .btn.danger { background: var(--danger-color); }
         input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: var(--bg-color); color: #fff; font-size: 15px; box-sizing: border-box; margin-top: 6px; margin-bottom: 12px; outline: none; }
         
-        /* Навигация */
         .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: rgba(30,41,59,0.95); backdrop-filter: blur(10px); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; }
         .nav-item { color: var(--hint-color); font-size: 12px; cursor: pointer; text-align: center; }
         .nav-item.active { color: var(--accent-neon); font-weight: bold; }
         
-        /* Каталог */
         .categories { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 12px; padding-bottom: 4px; }
         .categories::-webkit-scrollbar { display: none; }
         .cat-btn { background: var(--bg-color); color: var(--text-color); border: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 20px; font-size: 14px; white-space: nowrap; cursor: pointer; }
@@ -37,47 +36,66 @@
 </head>
 <body>
 
-    <!-- ВКЛАДКА 1: ПРОДАЖИ (КАТАЛОГ) -->
-    <div id="tab-sales" class="tab-content">
-        <h2>🛍 Каталог и Продажи</h2>
-        <div class="card">
-            <label>Торговая точка смены:</label>
-            <select id="sale-branch-select"></select>
-            <button class="btn success" style="margin-bottom:12px;" onclick="openShift()">Открыть смену здесь</button>
+    <!-- ================= СОТРУДНИК ================= -->
+    <div id="view-employee" class="hidden">
+        <!-- Вкладка 1: Касса и продажи -->
+        <div id="tab-emp-sales" class="emp-tab">
+            <h2>🛍 Продажи (Касса)</h2>
+            <div class="card">
+                <label>Торговая точка смены:</label>
+                <select id="emp-branch-select"></select>
+                <button class="btn success" onclick="openShift()">Открыть смену здесь</button>
+            </div>
+            <div class="card">
+                <input type="text" id="search" placeholder="Поиск товара..." oninput="filterCatalog()">
+                <div class="categories" id="categories-list"></div>
+                <div id="products-list"></div>
+            </div>
         </div>
-        
-        <div class="card">
-            <input type="text" id="search" placeholder="Поиск товара..." oninput="filterCatalog()">
-            <div class="categories" id="categories-list"></div>
-            <div id="products-list"></div>
+
+        <!-- Вкладка 2: График и смены -->
+        <div id="tab-emp-schedule" class="emp-tab hidden">
+            <h2>📅 График и смены</h2>
+            <div class="card">
+                <label>Выбрать желаемую смену (видна только директору):</label>
+                <input type="date" id="desired-shift-date">
+                <button class="btn" onclick="requestShift()">Отправить желаемую смену</button>
+            </div>
+        </div>
+
+        <!-- Вкладка 3: Моя ЗП -->
+        <div id="tab-emp-salary" class="emp-tab hidden">
+            <h2>💰 Моя зарплата</h2>
+            <div class="card">
+                <p>Отработано смен: <b id="emp-stat-shifts">0</b></p>
+                <p>Продажи за месяц: <b id="emp-stat-sales">0 ₽</b></p>
+                <p>Расчетная зарплата: <b id="emp-stat-total" style="color:var(--success-color);">0 ₽</b></p>
+            </div>
+        </div>
+
+        <div class="nav-bar">
+            <div class="nav-item active" onclick="switchEmpTab('sales', this)">🛍<br>Касса</div>
+            <div class="nav-item" onclick="switchEmpTab('schedule', this)">📅<br>График</div>
+            <div class="nav-item" onclick="switchEmpTab('salary', this)">💰<br>Зарплата</div>
         </div>
     </div>
 
-    <!-- ВКЛАДКА 2: ЗАРПЛАТА И УПРАВЛЕНИЕ -->
-    <div id="tab-salary" class="tab-content hidden">
-        <h2>💰 Зарплата и Управление</h2>
-        
-        <!-- Блок сотрудника -->
-        <div id="emp-salary-block" class="card">
-            <h3>Мои финансы за месяц</h3>
-            <p>Отработано смен: <b id="e-shifts">0</b></p>
-            <p>Продажи: <b id="e-sales">0 ₽</b></p>
-            <p>Итого расчетных: <b id="e-total" style="color:var(--success-color);">0 ₽</b></p>
-        </div>
 
-        <!-- Блок директора -->
-        <div id="dir-salary-block" class="hidden">
+    <!-- ================= ДИРЕКТОР ================= -->
+    <div id="view-director" class="hidden">
+        <!-- Вкладка 1: Точки и Сотрудники -->
+        <div id="tab-dir-staff" class="dir-tab">
+            <h2>🏬 Точки и Сотрудники</h2>
             <div class="card">
-                <h3>🏬 Управление точками</h3>
-                <input type="text" id="new-branch-name" placeholder="Название магазина">
+                <label>Новый магазин:</label>
+                <input type="text" id="new-branch-name" placeholder="Название точки">
                 <button class="btn" onclick="addBranch()">Добавить магазин</button>
                 <div id="branches-list" style="margin-top:10px;"></div>
             </div>
-
             <div class="card">
-                <h3>👥 Сотрудники и условия ЗП</h3>
-                <label>Имя сотрудника / ID:</label>
-                <input type="text" id="cfg-emp-id" placeholder="Telegram ID сотрудника">
+                <h3>Настройка сотрудника и ЗП</h3>
+                <label>Telegram ID сотрудника:</label>
+                <input type="text" id="cfg-emp-id" placeholder="ID сотрудника">
                 <label>Привязка к точке:</label>
                 <select id="cfg-branch-select"></select>
                 <label>Тип оплаты:</label>
@@ -85,28 +103,60 @@
                     <option value="fixed">Фикс за смену</option>
                     <option value="shift_percent">Выход + Процент</option>
                 </select>
-                <div id="div-fixed"><label>Сумма за смену (₽):</label><input type="number" id="cfg-fixed" value="1500"></div>
-                <div id="div-percent" class="hidden"><label>Выход за смену (₽):</label><input type="number" id="cfg-shift" value="1000"><label>Процент от продаж (%):</label><input type="number" id="cfg-per" value="5"></div>
-                <button class="btn success" onclick="saveEmployeeSettings()">Сохранить настройки сотрудника</button>
+                <div id="div-fixed"><label>Фикс за смену (₽):</label><input type="number" id="cfg-fixed" value="1500"></div>
+                <div id="div-percent" class="hidden"><label>Выход (₽):</label><input type="number" id="cfg-shift" value="1000"><label>Процент (%):</label><input type="number" id="cfg-per" value="5"></div>
+                <button class="btn success" onclick="saveEmployeeSettings()">Сохранить параметры сотрудника</button>
             </div>
         </div>
-    </div>
 
-    <!-- ВКЛАДКА 3: РЕВИЗИЯ -->
-    <div id="tab-revision" class="tab-content hidden">
-        <h2>🔍 Быстрая Ревизия</h2>
-        <div class="card">
-            <p style="color:var(--hint-color);">Укажите фактическое наличие товара на складе:</p>
-            <div id="revision-list"></div>
-            <button class="btn success" onclick="submitRevision()">Подтвердить и обновить остатки</button>
+        <!-- Вкладка 2: График и Выплаты ЗП -->
+        <div id="tab-dir-pay" class="dir-tab hidden">
+            <h2>💰 График и Выплата ЗП</h2>
+            <div class="card">
+                <h3>Выплата с премиями и штрафами</h3>
+                <label>Telegram ID сотрудника:</label>
+                <input type="number" id="pay-emp-id" placeholder="ID сотрудника">
+                <label>Итоговая сумма:</label>
+                <input type="number" id="pay-total" placeholder="0">
+                <label>Премия (+):</label>
+                <input type="number" id="pay-bonus" value="0">
+                <label>Штраф (-):</label>
+                <input type="number" id="pay-penalty" value="0">
+                <label>Комментарий:</label>
+                <input type="text" id="pay-comment" placeholder="За что премия/штраф">
+                <button class="btn success" onclick="makePayout()">Провести выплату и записать в логи</button>
+            </div>
         </div>
-    </div>
 
-    <!-- НИЖНЯЯ НАВИГАЦИЯ -->
-    <div class="nav-bar">
-        <div class="nav-item active" onclick="switchTab('sales', this)">🛍<br>Продажи</div>
-        <div class="nav-item" onclick="switchTab('salary', this)">💰<br>Зарплата</div>
-        <div class="nav-item" onclick="switchTab('revision', this)">🔍<br>Ревизия</div>
+        <!-- Вкладка 3: Отчеты по датам -->
+        <div id="tab-dir-reports" class="dir-tab hidden">
+            <h2>📊 Отчеты за период</h2>
+            <div class="card">
+                <label>Начальная дата:</label>
+                <input type="date" id="rep-start">
+                <label>Конечная дата:</label>
+                <input type="date" id="rep-end">
+                <button class="btn" onclick="generateReport()">Сформировать отчет</button>
+                <div id="report-result" style="margin-top: 12px; font-size: 14px;"></div>
+            </div>
+        </div>
+
+        <!-- Вкладка 4: Ревизия -->
+        <div id="tab-dir-rev" class="dir-tab hidden">
+            <h2>🔍 Ревизия (По факту)</h2>
+            <div class="card">
+                <p style="color:var(--hint-color); font-size:14px;">Укажите фактическое наличие товаров на складе:</p>
+                <div id="revision-list"></div>
+                <button class="btn success" onclick="submitRevision()">Обновить остатки склада</button>
+            </div>
+        </div>
+
+        <div class="nav-bar">
+            <div class="nav-item active" onclick="switchDirTab('staff', this)">👥<br>Штат</div>
+            <div class="nav-item" onclick="switchDirTab('pay', this)">💰<br>ЗП</div>
+            <div class="nav-item" onclick="switchDirTab('reports', this)">📊<br>Отчеты</div>
+            <div class="nav-item" onclick="switchDirTab('rev', this)">🔍<br>Ревизия</div>
+        </div>
     </div>
 
     <script>
@@ -114,9 +164,9 @@
         tg.expand(); tg.ready();
 
         const DIRECTOR_ID = 7562942752;
-        const isDirector = tg.initDataUnsafe?.user?.id === DIRECTOR_ID;
+        const userId = tg.initDataUnsafe?.user?.id;
+        const isDirector = (userId === DIRECTOR_ID);
 
-        // Данные (в реальности подтягиваются из базы, здесь базовый шаблон каталога)
         let branches = [{id: 1, name: "Центральный"}, {id: 2, name: "Северный"}];
         let catalog = [
             {id: 1, cat: "Жидкости", name: "Podonki Alfa", price: 500, stock: 15},
@@ -126,30 +176,35 @@
         let currentCategory = "Жидкости";
 
         if (isDirector) {
-            document.getElementById('dir-salary-block').classList.remove('hidden');
+            document.getElementById('view-director').classList.remove('hidden');
             renderDirectorData();
+        } else {
+            document.getElementById('view-employee').classList.remove('hidden');
+            renderEmployeeData();
         }
-
-        initSalesTab();
-        initRevisionTab();
 
         function sendData(action, payload) {
             tg.sendData(JSON.stringify({ action, payload }));
             tg.close();
         }
 
-        function switchTab(tabName, el) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        function switchEmpTab(name, el) {
+            document.querySelectorAll('.emp-tab').forEach(e => e.classList.add('hidden'));
+            document.getElementById(`tab-emp-${name}`).classList.remove('hidden');
+            document.querySelectorAll('#view-employee .nav-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
         }
 
-        // --- ПРОДАЖИ ---
-        function initSalesTab() {
-            const bSel = document.getElementById('sale-branch-select');
-            bSel.innerHTML = branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-            
+        function switchDirTab(name, el) {
+            document.querySelectorAll('.dir-tab').forEach(e => e.classList.add('hidden'));
+            document.getElementById(`tab-dir-${name}`).classList.remove('hidden');
+            document.querySelectorAll('#view-director .nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        // --- Сотрудник ---
+        function renderEmployeeData() {
+            document.getElementById('emp-branch-select').innerHTML = branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
             const cats = [...new Set(catalog.map(i => i.cat))];
             document.getElementById('categories-list').innerHTML = cats.map((c, idx) => `
                 <button class="cat-btn ${idx===0?'active':''}" onclick="selectCat('${c}', this)">${c}</button>
@@ -165,10 +220,9 @@
 
         function filterCatalog() {
             const query = document.getElementById('search').value.toLowerCase();
-            const list = document.getElementById('products-list');
-            list.innerHTML = catalog.filter(i => i.cat === currentCategory && i.name.toLowerCase().includes(query)).map(item => `
+            document.getElementById('products-list').innerHTML = catalog.filter(i => i.cat === currentCategory && i.name.toLowerCase().includes(query)).map(item => `
                 <div class="product-item">
-                    <div><b>${item.name}</b><br><small>${item.price} ₽</small></div>
+                    <div><b>${item.name}</b><br><small>${item.price} ₽ | Склад: ${item.stock}</small></div>
                     <div class="counter">
                         <button class="btn-count" onclick="changeQty(${item.id}, -1)">-</button>
                         <span id="qty-${item.id}">0</span>
@@ -183,29 +237,32 @@
             cart[id].quantity += delta;
             if(cart[id].quantity < 0) cart[id].quantity = 0;
             document.getElementById(`qty-${id}`).innerText = cart[id].quantity;
-            updateMainButton();
-        }
-
-        function updateMainButton() {
+            
             let total = 0, count = 0;
             for(let i in cart) { total += cart[i].price * cart[i].quantity; count += cart[i].quantity; }
             if(count > 0) {
-                tg.MainButton.text = `Отправить отчет (${total} ₽)`;
+                tg.MainButton.text = `Пробить товары (${total} ₽)`;
                 tg.MainButton.show();
             } else { tg.MainButton.hide(); }
         }
 
         tg.MainButton.onClick(() => {
-            const branch_id = document.getElementById('sale-branch-select').value;
+            const branch_id = document.getElementById('emp-branch-select').value;
             sendData("sale_report", { branch_id: parseInt(branch_id), cart });
         });
 
         function openShift() {
-            const branch_id = document.getElementById('sale-branch-select').value;
+            const branch_id = document.getElementById('emp-branch-select').value;
             sendData("open_shift", { branch_id: parseInt(branch_id) });
         }
 
-        // --- УПРАВЛЕНИЕ ДИРЕКТОРА ---
+        function requestShift() {
+            const date = document.getElementById('desired-shift-date').value;
+            if(!date) return alert("Выберите дату!");
+            sendData("want_shift", { date });
+        }
+
+        // --- Директор ---
         function renderDirectorData() {
             document.getElementById('branches-list').innerHTML = branches.map(b => `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
@@ -214,11 +271,18 @@
                 </div>
             `).join('');
             document.getElementById('cfg-branch-select').innerHTML = branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+            
+            document.getElementById('revision-list').innerHTML = catalog.map(item => `
+                <div style="margin-bottom:10px;">
+                    <label>${item.name} (Учет: ${item.stock})</label>
+                    <input type="number" id="rev-${item.id}" value="${item.stock}">
+                </div>
+            `).join('');
         }
 
         function addBranch() {
             const name = document.getElementById('new-branch-name').value;
-            if(!name) return;
+            if(!name) return alert("Введите название!");
             sendData("add_branch", { name });
         }
 
@@ -249,25 +313,38 @@
                 fixed = parseFloat(document.getElementById('cfg-shift').value) || 0;
                 percent = parseFloat(document.getElementById('cfg-per').value) || 0;
             }
-            if(!emp_id) return alert("Введите Telegram ID сотрудника!");
+            if(!emp_id) return alert("Введите ID сотрудника!");
             sendData("save_employee_settings", { emp_id, branch_id, salary_type, fixed, percent });
         }
 
-        // --- РЕВИЗИЯ ---
-        function initRevisionTab() {
-            const revDiv = document.getElementById('revision-list');
-            revDiv.innerHTML = catalog.map(item => `
-                <div style="margin-bottom:10px;">
-                    <label>${item.name} (Учет: ${item.stock})</label>
-                    <input type="number" id="rev-item-${item.id}" value="${item.stock}">
+        function makePayout() {
+            const emp_id = parseInt(document.getElementById('pay-emp-id').value);
+            const total = parseFloat(document.getElementById('pay-total').value) || 0;
+            const bonus = parseFloat(document.getElementById('pay-bonus').value) || 0;
+            const penalty = parseFloat(document.getElementById('pay-penalty').value) || 0;
+            const comment = document.getElementById('pay-comment').value;
+            if(!emp_id) return alert("Введите ID сотрудника!");
+            sendData("make_payout", { emp_id, total, bonus, penalty, comment });
+        }
+
+        function generateReport() {
+            const start = document.getElementById('rep-start').value;
+            const end = document.getElementById('rep-end').value;
+            if(!start || !end) return alert("Выберите диапазон дат!");
+            // Вывод демо-структуры отчета в интерфейсе Mini App
+            document.getElementById('report-result').innerHTML = `
+                <div style="background:var(--bg-color); padding:10px; border-radius:8px; margin-top:8px;">
+                    <b>Период:</b> с ${start} по ${end}<br>
+                    <b>Выручка:</b> расчет по базе<br>
+                    <b>Выплачено ЗП:</b> расчет по базе
                 </div>
-            `).join('');
+            `;
         }
 
         function submitRevision() {
             let updates = {};
             catalog.forEach(item => {
-                const val = document.getElementById(`rev-item-${item.id}`).value;
+                const val = document.getElementById(`rev-${item.id}`).value;
                 updates[item.id] = parseInt(val) || 0;
             });
             sendData("revision_fact", { updates });
