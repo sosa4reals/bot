@@ -31,6 +31,24 @@
             border: 1px solid #2d3142; background: var(--surface-color);
             color: var(--text-color); font-size: 16px; outline: none;
         }
+        
+        /* 🏹 КРАСИВЫЙ СЛАЙДЕР С КАТЕГОРИЯМИ И СТРЕЛКАМИ */
+        .category-slider {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--surface-color); border: 1px solid #2d3142;
+            border-radius: 14px; margin-top: 10px; padding: 6px 10px;
+        }
+        .slider-arrow {
+            background: none; border: none; color: var(--accent-neon);
+            font-size: 22px; font-weight: bold; cursor: pointer; padding: 5px 12px;
+            transition: transform 0.1s;
+        }
+        .slider-arrow:active { transform: scale(0.85); }
+        .slider-title {
+            font-size: 16px; font-weight: bold; color: var(--text-color);
+            text-align: center; flex: 1; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
         .product-item, .crm-card {
             display: flex; justify-content: space-between; align-items: center;
             padding: 14px; background: var(--surface-color); border-radius: 12px;
@@ -76,17 +94,24 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- Вкладка 1: Продажи (слайдер категорий + вертикальная прокрутка товаров) -->
         <div id="view-sales" class="view-section">
             <div class="header">
-                <input type="text" class="search-bar" id="search" placeholder="Поиск по всему прайсу...">
+                <input type="text" class="search-bar" id="search" placeholder="Поиск по этой рубрике...">
+                <div class="category-slider">
+                    <button class="slider-arrow" onclick="moveCategory(-1)">‹</button>
+                    <div class="slider-title" id="current-cat-title">💧 Жидкости</div>
+                    <button class="slider-arrow" onclick="moveCategory(1)">›</button>
+                </div>
             </div>
             <div id="products-list"></div>
         </div>
 
+        <!-- Вкладка 2: Зарплата -->
         <div id="view-salary" class="view-section hidden">
             <h2>🕒 Рабочая смена</h2>
             <div class="crm-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
-                <div id="shift-status">Статус смены: Авторизован</div>
+                <div id="shift-status">Статус смены: Подключено</div>
                 <button class="btn-action success" id="btn-shift" onclick="sendCMD('shift_toggle')">Открыть смену</button>
             </div>
             <h2>💰 Финансы сотрудника</h2>
@@ -94,6 +119,7 @@
             <div class="crm-card"><span>Сумма процентов:</span><span id="stat-percent">По чекам в боте</span></div>
         </div>
 
+        <!-- Вкладка 3: Ревизия -->
         <div id="view-revision" class="view-section hidden">
             <h2>🔍 Проведение ревизии</h2>
             <div class="form-group">
@@ -102,11 +128,12 @@
             </div>
             <div class="form-group">
                 <label>Комментарий к проверке</label>
-                <input type="text" class="form-input" id="rev-comment" placeholder="Например: касса сошлась">
+                <input type="text" class="form-input" id="rev-comment" placeholder="Например: всё сошлось">
             </div>
             <button class="btn-action" onclick="submitRevision()">Зафиксировать переучёт</button>
         </div>
 
+        <!-- Вкладка 4: Точки -->
         <div id="view-branches" class="view-section hidden">
             <h2>🏬 Торговые точки</h2>
             <div class="form-group">
@@ -115,9 +142,10 @@
             <button class="btn-action" onclick="createBranch()" style="margin-bottom: 20px;">Добавить точку</button>
         </div>
 
+        <!-- Вкладка 5: Управление -->
         <div id="view-staff" class="view-section hidden">
             <h2>👤 Управление персоналом</h2>
-            <button class="btn-action success" onclick="sendCMD('excel_export')">📥 Экспортировать каталог в Excel</button>
+            <button class="btn-action success" onclick="sendCMD('excel_export')" style="margin-bottom: 12px;">📥 Экспортировать каталог в Excel</button>
             <button class="btn-action" onclick="sendCMD('excel_import')" style="margin-bottom: 20px; background-color: #475569;">📤 Инструкция по импорту прайса</button>
         </div>
 
@@ -133,63 +161,96 @@
         const tg = window.Telegram.WebApp;
         tg.expand(); tg.ready();
 
+        // 📦 СТРУКТУРИРОВАННЫЙ КАТАЛОГ ПО РУБРИКАМ
         const catalog = {
-            "Podonki Alfa": 500, "Podonki Critical": 500, "Mad": 500, "Vlaga": 550, "VLIQ Shock": 450,
-            "OG GO Elfliq": 500, "Cosmo": 550, "Monster": 500, "Monstervapor": 500, "BZ": 400,
-            "AngryVape": 450, "VLIQ Crystal": 850, "Inflave": 850, "Chapman": 500, "Jack": 500, "Niko 2%": 100,
-            "Vozol Star": 1800, "Vozol Rave": 1800, "Vozol Click": 1800, "Inflave Onyx Slim": 1800,
-            "Elfbar Moonnight": 1500, "Elfbar BC Pro": 1800, "Ignite V12": 1600, "Lost Mary X Link": 1250,
-            "Lost Mary MO10000": 1200, "Lost Mary Bloom": 1600, "WAKA XLand": 1400, "WAKA SoPro": 1600,
-            "GeekBar Meloso": 1500, "Moti": 900, "Vaporesso Xros 2 Pro": 3000, "Vaporesso Xros 5": 2800,
-            "Vaporesso Xros 5 mini": 2000, "Vaporesso Xros 6": 3000, "Vaporesso Xros 6 mini": 2300,
-            "Vaporesso Xros Cube": 2000, "Vaporesso Vibe SE2": 1800, "Vaporesso Vibe": 1500,
-            "Vaporesso Vibe Nano": 1500, "Upends NEX": 1800, "GEEKVAPE Aegis Force": 4000,
-            "GEEKVAPE Aegis Boost 2": 3600, "GEEKVAPE Aegis Hero 5": 3500, "GEEKVAPE Aegis Hero 3": 3400,
-            "Smoant Pasito 2": 3200, "Smoant Pasito 3": 4000, "Smoant Knight 80": 3200,
-            "Voopoo Drag 6": 3500, "Voopoo i3": 2000, "Voopoo Vmate mini": 1000, "Voopoo Vmate mini 4 pcs": 1800,
-            "Nasty": 1200, "SkyVape": 600, "LongCut": 800, "Вата Bacon V2": 650, "Вата Bacon Prime": 850,
-            "Вата Nasty": 650, "Вата Atom": 500, "Койла(пара)": 450, "Steels": 600, "Syberia": 450,
-            "Odens": 450, "Fedrs": 500, "Velo": 600, "LYFT": 400, "Arqa": 490, "Kasta": 450,
-            "Кар-дж Xros": 300, "Кар-дж Luxe Q": 350, "Кар-дж Luxe XR POD": 500, "Кар-дж Vibe": 340,
-            "Кар-дж Nano": 400, "Ис-р GTI": 320, "Ис-р GTX": 320, "Voopoo Argus e40": 350,
-            "Voopoo Argus": 350, "Voopoo Vmate": 300, "Voopoo Vinci": 350, "Ис-р Voopoo Pnp X": 350,
-            "Ис-р Voopoo Pnp-VM6": 350, "Ис-р GeekVape B": 320, "Ис-р GeekVape P": 350, "Ис-р GeekVape Z": 450,
-            "Кар-дж GeekVape Nano": 400, "Кар-дж GeekVape Q-pod": 340, "Кар-дж GeekVape Hero": 750,
-            "Ис-р Smoant K": 320, "RBA Smoant": 750, "Ис-р Smoant P-I": 350, "Ис-р Smoant S": 300,
-            "Кар-ж Pasito Mini": 500, "Кар-ж Knight IO": 750, "Кар-ж Feeelin mini": 200, "Кар-ж Plonq": 400,
-            "Кар-ж Lost Vape URSA": 350, "Ис-р Brusko SPL-10": 300, "Кар-ж Brusko Aspire": 400,
-            "Ис-р Rincoe JellyBox Nano": 300, "Ис-р Rincoe Manto AIO": 300, "Кар-дж Upends": 300
+            "💧 Жидкости": {
+                "Podonki Alfa": 500, "Podonki Critical": 500, "Mad": 500, "Vlaga": 550, "VLIQ Shock": 450,
+                "OG GO Elfliq": 500, "Cosmo": 550, "Monster": 500, "Monstervapor": 500, "BZ": 400,
+                "AngryVape": 450, "VLIQ Crystal": 850, "Inflave": 850, "Chapman": 500, "Jack": 500, "Niko 2%": 100
+            },
+            "🔋 Одноразки": {
+                "Vozol Star": 1800, "Vozol Rave": 1800, "Vozol Click": 1800, "Inflave Onyx Slim": 1800,
+                "Elfbar Moonnight": 1500, "Elfbar BC Pro": 1800, "Ignite V12": 1600, "Lost Mary X Link": 1250,
+                "Lost Mary MO10000": 1200, "Lost Mary Bloom": 1600, "WAKA XLand": 1400, "WAKA SoPro": 1600,
+                "GeekBar Meloso": 1500, "Moti": 900
+            },
+            "💨 Под-устройства": {
+                "Vaporesso Xros 2 Pro": 3000, "Vaporesso Xros 5": 2800, "Vaporesso Xros 5 mini": 2000,
+                "Vaporesso Xros 6": 3000, "Vaporesso Xros 6 mini": 2300, "Vaporesso Xros Cube": 2000,
+                "Vaporesso Vibe SE2": 1800, "Vaporesso Vibe": 1500, "Vaporesso Vibe Nano": 1500, "Upends NEX": 1800,
+                "GEEKVAPE Aegis Force": 4000, "GEEKVAPE Aegis Boost 2": 3600, "GEEKVAPE Aegis Hero 5": 3500,
+                "GEEKVAPE Aegis Hero 3": 3400, "Smoant Pasito 2": 3200, "Smoant Pasito 3": 4000,
+                "Smoant Knight 80": 3200, "Voopoo Drag 6": 3500, "Voopoo i3": 2000, "Voopoo Vmate mini": 1000,
+                "Voopoo Vmate mini 4 pcs": 1800
+            },
+            "🌿 Обслуга / Табак": {
+                "Nasty": 1200, "SkyVape": 600, "LongCut": 800, "Вата Bacon V2": 650, "Вата Bacon Prime": 850,
+                "Вата Nasty": 650, "Вата Atom": 500, "Койла(пара)": 450, "Steels": 600, "Syberia": 450,
+                "Odens": 450, "Fedrs": 500, "Velo": 600, "LYFT": 400, "Arqa": 490, "Kasta": 450
+            },
+            "⚙️ Комплектующие": {
+                "Кар-дж Xros": 300, "Кар-дж Luxe Q": 350, "Кар-дж Luxe XR POD": 500, "Кар-дж Vibe": 340,
+                "Кар-дж Nano": 400, "Ис-р GTI": 320, "Ис-р GTX": 320, "Voopoo Argus e40": 350,
+                "Voopoo Argus": 350, "Voopoo Vmate": 300, "Voopoo Vinci": 350, "Ис-р Voopoo Pnp X": 350,
+                "Ис-р Voopoo Pnp-VM6": 350, "Ис-р GeekVape B": 320, "Ис-р GeekVape P": 350, "Ис-р GeekVape Z": 450,
+                "Кар-дж GeekVape Nano": 400, "Кар-дж GeekVape Q-pod": 340, "Кар-дж GeekVape Hero": 750,
+                "Ис-р Smoant K": 320, "RBA Smoant": 750, "Ис-р Smoant P-I": 350, "Ис-р Smoant S": 300,
+                "Кар-ж Pasito Mini": 500, "Кар-ж Knight IO": 750, "Кар-ж Feeelin mini": 200, "Кар-ж Plonq": 400,
+                "Кар-ж Lost Vape URSA": 350, "Ис-р Brusko SPL-10": 300, "Кар-ж Brusko Aspire": 400,
+                "Ис-р Rincoe JellyBox Nano": 300, "Ис-р Rincoe Manto AIO": 300, "Кар-дж Upends": 300
+            }
         };
 
         let cart = {};
+        const categories = Object.keys(catalog);
+        let activeCatIdx = 0;
 
         const prodList = document.getElementById('products-list');
-        for (const [name, price] of Object.entries(catalog)) {
-            const item = document.createElement('div');
-            item.className = 'product-item p-item';
-            item.dataset.name = name.toLowerCase();
-            item.innerHTML = `
-                <div class="product-info"><div class="product-name">${name}</div><div class="product-price">${price} ₽</div></div>
-                <div class="counter">
-                    <button class="btn-count hidden" onclick="changeCount('${name.replace(/'/g, "\\'")}', ${price}, -1, this)">-</button>
-                    <span class="count-val hidden">0</span>
-                    <button class="btn-count add" onclick="changeCount('${name.replace(/'/g, "\\'")}', ${price}, 1, this)">+</button>
-                </div>
-            `;
-            prodList.appendChild(item);
+        for (const [category, products] of Object.entries(catalog)) {
+            for (const [name, price] of Object.entries(products)) {
+                const item = document.createElement('div');
+                item.className = 'product-item p-item';
+                item.dataset.category = category;
+                item.dataset.name = name.toLowerCase();
+                item.innerHTML = `
+                    <div class="product-info"><div class="product-name">${name}</div><div class="product-price">${price} ₽</div></div>
+                    <div class="counter">
+                        <button class="btn-count hidden" onclick="changeCount('${name.replace(/'/g, "\\'")}', ${price}, -1, this)">-</button>
+                        <span class="count-val hidden">0</span>
+                        <button class="btn-count add" onclick="changeCount('${name.replace(/'/g, "\\'")}', ${price}, 1, this)">+</button>
+                    </div>
+                `;
+                prodList.appendChild(item);
+            }
+        }
+
+        // 🔄 ЛОГИКА СЛАЙДЕРА СТРЕЛОК
+        function moveCategory(direction) {
+            activeCatIdx += direction;
+            if (activeCatIdx < 0) activeCatIdx = categories.length - 1;
+            if (activeCatIdx >= categories.length) activeCatIdx = 0;
+            
+            document.getElementById('current-cat-title').innerText = categories[activeCatIdx];
+            document.getElementById('search').value = '';
+            filterProducts();
         }
 
         function filterProducts() {
             const query = document.getElementById('search').value.toLowerCase();
+            const currentCategory = categories[activeCatIdx];
+            
             document.querySelectorAll('.p-item').forEach(item => {
                 const sMatch = item.dataset.name.includes(query);
+                const cMatch = item.dataset.category === currentCategory;
+                
                 if (query.length > 0) {
                     if (sMatch) item.classList.remove('hidden'); else item.classList.add('hidden');
                 } else {
-                    item.classList.remove('hidden');
+                    if (cMatch) item.classList.remove('hidden'); else item.classList.add('hidden');
                 }
             });
         }
+
         document.getElementById('search').addEventListener('input', filterProducts);
 
         function changeCount(name, price, delta, btn) {
