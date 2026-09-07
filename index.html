@@ -7,8 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            /* Telegram native colors or modern dark theme fallbacks */
-            --bg-color: var(--tg-theme-bg-color, #0f172a);
+            var(--tg-theme-bg-color, #0f172a);
             --surface-color: var(--tg-theme-secondary-bg-color, #1e293b);
             --text-color: var(--tg-theme-text-color, #f8fafc);
             --hint-color: var(--tg-theme-hint-color, #94a3b8);
@@ -185,7 +184,6 @@
         </div>
     </div>
 
-    <!-- ТВОЙ JS СКРИПТ ОСТАЛСЯ БЕЗ ИЗМЕНЕНИЙ (только мелкие правки для работы с новым UI) -->
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand(); tg.ready();
@@ -209,7 +207,6 @@
                 document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active'); currentCategory = cat;
                 document.getElementById('search').value = ''; filterProducts();
-                // Scroll behavior for categories
                 btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             };
             catList.appendChild(btn);
@@ -248,7 +245,6 @@
         document.getElementById('search').addEventListener('input', filterProducts);
 
         function changeCount(name, price, delta, btn) {
-            // Виброотклик для мобильных телефонов (Telegram Native)
             if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
             const counterDiv = btn.parentElement;
@@ -270,7 +266,7 @@
             for (const item of Object.values(cart)) { total += item.price * item.quantity; count += item.quantity; }
             if (count > 0 && !document.getElementById('view-sales').classList.contains('hidden')) {
                 tg.MainButton.text = `Оформить продажу (${total} ₽)`; 
-                tg.MainButton.color = "#6366f1"; // Accent color mapping
+                tg.MainButton.color = "#6366f1"; 
                 tg.MainButton.show();
             } else { tg.MainButton.hide(); }
         }
@@ -279,11 +275,10 @@
             sendCMD("sale", cart);
         });
 
-        // Отправка данных
+        // ПРАВИЛЬНАЯ ФУНКЦИЯ ОТПРАВКИ (ИСПОЛЬЗУЕТ NATIVE METHOD)
         function sendCMD(action, payload = {}) {
             const dataObj = { action: action, payload: payload };
-            tg.switchInlineQuery(JSON.stringify(dataObj));
-            tg.close();
+            tg.sendData(JSON.stringify(dataObj));
         }
 
         function switchTab(tabId, btn) {
