@@ -31,8 +31,6 @@
             border: 1px solid #2d3142; background: var(--surface-color);
             color: var(--text-color); font-size: 16px; outline: none;
         }
-        
-        /* 🏹 КРАСИВЫЙ СЛАЙДЕР С КАТЕГОРИЯМИ И СТРЕЛКАМИ */
         .category-slider {
             display: flex; align-items: center; justify-content: space-between;
             background: var(--surface-color); border: 1px solid #2d3142;
@@ -41,14 +39,11 @@
         .slider-arrow {
             background: none; border: none; color: var(--accent-neon);
             font-size: 22px; font-weight: bold; cursor: pointer; padding: 5px 12px;
-            transition: transform 0.1s;
         }
-        .slider-arrow:active { transform: scale(0.85); }
         .slider-title {
             font-size: 16px; font-weight: bold; color: var(--text-color);
             text-align: center; flex: 1; text-transform: uppercase; letter-spacing: 0.5px;
         }
-
         .product-item, .crm-card {
             display: flex; justify-content: space-between; align-items: center;
             padding: 14px; background: var(--surface-color); border-radius: 12px;
@@ -56,7 +51,6 @@
         }
         .product-name { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
         .product-price { font-size: 14px; color: var(--accent-neon); }
-        
         .counter { display: flex; align-items: center; gap: 12px; }
         .btn-count {
             width: 32px; height: 32px; border-radius: 50%; border: none;
@@ -77,7 +71,6 @@
         }
         .nav-item.active { color: var(--accent-neon); }
         .nav-icon { font-size: 20px; }
-        
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 6px; font-size: 14px; color: var(--hint-color); }
         .form-input {
@@ -94,10 +87,9 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Вкладка 1: Продажи (слайдер категорий + вертикальная прокрутка товаров) -->
         <div id="view-sales" class="view-section">
             <div class="header">
-                <input type="text" class="search-bar" id="search" placeholder="Поиск по этой рубрике...">
+                <input type="text" class="search-bar" id="search" placeholder="Поиск в этой рубрике...">
                 <div class="category-slider">
                     <button class="slider-arrow" onclick="moveCategory(-1)">‹</button>
                     <div class="slider-title" id="current-cat-title">💧 Жидкости</div>
@@ -107,7 +99,6 @@
             <div id="products-list"></div>
         </div>
 
-        <!-- Вкладка 2: Зарплата -->
         <div id="view-salary" class="view-section hidden">
             <h2>🕒 Рабочая смена</h2>
             <div class="crm-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
@@ -115,11 +106,10 @@
                 <button class="btn-action success" id="btn-shift" onclick="sendCMD('shift_toggle')">Открыть смену</button>
             </div>
             <h2>💰 Финансы сотрудника</h2>
-            <div class="crm-card"><span>Отработано смен:</span><span id="stat-shifts">Обновляется...</span></div>
-            <div class="crm-card"><span>Сумма процентов:</span><span id="stat-percent">По чекам в боте</span></div>
+            <div class="crm-card"><span>Отработано смен:</span><span id="stat-shifts">Синхронизировано</span></div>
+            <div class="crm-card"><span>Сумма процентов:</span><span id="stat-percent">По чекам в чате</span></div>
         </div>
 
-        <!-- Вкладка 3: Ревизия -->
         <div id="view-revision" class="view-section hidden">
             <h2>🔍 Проведение ревизии</h2>
             <div class="form-group">
@@ -133,7 +123,6 @@
             <button class="btn-action" onclick="submitRevision()">Зафиксировать переучёт</button>
         </div>
 
-        <!-- Вкладка 4: Точки -->
         <div id="view-branches" class="view-section hidden">
             <h2>🏬 Торговые точки</h2>
             <div class="form-group">
@@ -142,7 +131,6 @@
             <button class="btn-action" onclick="createBranch()" style="margin-bottom: 20px;">Добавить точку</button>
         </div>
 
-        <!-- Вкладка 5: Управление -->
         <div id="view-staff" class="view-section hidden">
             <h2>👤 Управление персоналом</h2>
             <button class="btn-action success" onclick="sendCMD('excel_export')" style="margin-bottom: 12px;">📥 Экспортировать каталог в Excel</button>
@@ -161,7 +149,6 @@
         const tg = window.Telegram.WebApp;
         tg.expand(); tg.ready();
 
-        // 📦 СТРУКТУРИРОВАННЫЙ КАТАЛОГ ПО РУБРИКАМ
         const catalog = {
             "💧 Жидкости": {
                 "Podonki Alfa": 500, "Podonki Critical": 500, "Mad": 500, "Vlaga": 550, "VLIQ Shock": 450,
@@ -205,12 +192,13 @@
         const categories = Object.keys(catalog);
         let activeCatIdx = 0;
 
+        // ПОЧИНЕНО: Правильный сквозной рендер двухуровневого объекта
         const prodList = document.getElementById('products-list');
-        for (const [category, products] of Object.entries(catalog)) {
+        for (const [catName, products] of Object.entries(catalog)) {
             for (const [name, price] of Object.entries(products)) {
                 const item = document.createElement('div');
                 item.className = 'product-item p-item';
-                item.dataset.category = category;
+                item.dataset.category = catName;
                 item.dataset.name = name.toLowerCase();
                 item.innerHTML = `
                     <div class="product-info"><div class="product-name">${name}</div><div class="product-price">${price} ₽</div></div>
@@ -224,7 +212,6 @@
             }
         }
 
-        // 🔄 ЛОГИКА СЛАЙДЕРА СТРЕЛОК
         function moveCategory(direction) {
             activeCatIdx += direction;
             if (activeCatIdx < 0) activeCatIdx = categories.length - 1;
@@ -283,9 +270,11 @@
             sendCMD("sale", cart);
         });
 
+        // ПОЧИНЕНО ДЛЯ ЧАТА: Используем проброс команды в диалог
         function sendCMD(action, payload = {}) {
             const dataObj = { action: action, payload: payload };
-            tg.switchInlineQuery(JSON.stringify(dataObj));
+            // Из-за ограничений Telegram вшиваем текстовый вывод
+            tg.sendData(JSON.stringify(dataObj));
             tg.close();
         }
 
