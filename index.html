@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vape Zilla CRM</title>
+    <script src="https://telegram.org"></script>
+    <style>
+        :root {
+            --bg-color: #0d0e12;
+            --surface-color: #161820;
+            --text-color: #ffffff;
+            --hint-color: #64748b;
+            --accent-color: #6366f1;
+            --accent-neon: #818cf8;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: var(--bg-color); color: var(--text-color);
+            margin: 0; padding: 0; user-select: none; box-sizing: border-box;
+        }
+        .app-container { display: flex; flex-direction: column; height: 100vh; }
+        .view-section { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 90px; }
+        .view-section.hidden { display: none !important; }
+        
+        .header { position: sticky; top: 0; background: var(--bg-color); z-index: 10; padding-bottom: 10px; }
+        .search-bar {
+            width: 100%; box-sizing: border-box; padding: 12px; border-radius: 12px;
+            border: 1px solid #2d3142; background: var(--surface-color);
+            color: var(--text-color); font-size: 16px; outline: none;
+        }
+        .categories { display: flex; overflow-x: auto; padding: 10px 0 5px 0; gap: 8px; }
+        .categories::-webkit-scrollbar { display: none; }
+        .cat-btn {
+            background: var(--surface-color); color: var(--text-color); border: 1px solid #2d3142;
+            padding: 8px 16px; border-radius: 20px; font-size: 14px; white-space: nowrap; cursor: pointer;
+        }
+        .cat-btn.active { background: var(--accent-color); border-color: var(--accent-neon); }
+        
+        .product-item, .crm-card {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px; background: var(--surface-color); border-radius: 12px;
+            margin-bottom: 10px; border: 1px solid #2d3142;
+        }
+        .product-name { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+        .product-price { font-size: 14px; color: var(--accent-neon); }
+        
+        .counter { display: flex; align-items: center; gap: 12px; }
+        .btn-count {
+            width: 32px; height: 32px; border-radius: 50%; border: none;
+            background: #2d3142; color: var(--text-color); font-size: 18px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .btn-count.add { background: var(--accent-color); }
+        .count-val { font-size: 16px; font-weight: bold; min-width: 14px; text-align: center; }
+        
+        .nav-bar {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 65px;
+            background: var(--surface-color); border-top: 1px solid #2d3142;
+            display: flex; justify-content: space-around; align-items: center; z-index: 100;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            color: var(--hint-color); font-size: 11px; cursor: pointer; gap: 4px;
+        }
+        .nav-item.active { color: var(--accent-neon); }
+        .nav-icon { font-size: 20px; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 14px; color: var(--hint-color); }
+        .form-input {
+            width: 100%; box-sizing: border-box; padding: 12px; background: var(--surface-color);
+            border: 1px solid #2d3142; border-radius: 10px; color: #fff; font-size: 16px; outline: none;
+        }
+        .btn-action {
+            width: 100%; padding: 14px; background: var(--accent-color); border: none;
+            border-radius: 10px; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer;
+        }
+        .btn-action.success { background: var(--success-color); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div id="view-sales" class="view-section">
+            <div class="header">
+                <input type="text" class="search-bar" id="search" placeholder="Поиск товара...">
+                <div class="categories" id="categories-list"></div>
+            </div>
+            <div id="products-list"></div>
+        </div>
+
+        <div id="view-salary" class="view-section hidden">
+            <h2>🕒 Рабочая смена</h2>
+            <div class="crm-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+                <div id="shift-status">Статус смены: Подключено</div>
+                <button class="btn-action success" id="btn-shift" onclick="sendCMD('shift_toggle')">Открыть смену</button>
+            </div>
+            <h2>💰 Финансы сотрудника</h2>
+            <div class="crm-card"><span>Отработано смен:</span><span id="stat-shifts">Обновляется...</span></div>
+            <div class="crm-card"><span>Сумма процентов:</span><span id="stat-percent">По чекам в боте</span></div>
+        </div>
+
+        <div id="view-revision" class="view-section hidden">
+            <h2>🔍 Проведение ревизии</h2>
+            <div class="form-group">
+                <label>Фактически наличных в кассе (₽)</label>
+                <input type="number" class="form-input" id="rev-cash" placeholder="Введите сумму">
+            </div>
+            <div class="form-group">
+                <label>Комментарий к проверке</label>
+                <input type="text" class="form-input" id="rev-comment" placeholder="Например: всё в порядке">
+            </div>
+            <button class="btn-action" onclick="submitRevision()">Зафиксировать переучёт</button>
+        </div>
+
+        <div id="view-branches" class="view-section hidden">
+            <h2>🏬 Торговые точки</h2>
+            <div class="form-group">
+                <input type="text" class="form-input" id="new-branch-name" placeholder="Название новой точки">
+            </div>
+            <button class="btn-action" onclick="createBranch()" style="margin-bottom: 20px;">Добавить точку</button>
+        </div>
+
+        <div id="view-staff" class="view-section hidden">
+            <h2>👤 Управление персоналом</h2>
+            <button class="btn-action success" onclick="sendCMD('excel_export')">📥 Экспортировать каталог в Excel</button>
+            <button class="btn-action" onclick="sendCMD('excel_import')" style="margin-bottom: 20px; background-color: #475569;">📤 Инструкция по импорту прайса</button>
+        </div>
+
+        <div class="nav-bar">
+            <div class="nav-item active" onclick="switchTab('sales', this)"><span class="nav-icon">🛒</span><span>Продажи</span></div>
+            <div class="nav-item" onclick="switchTab('salary', this)"><span class="nav-icon">💰</span><span>Зарплата</span></div>
+            <div class="nav-item" onclick="switchTab('revision', this)"><span class="nav-icon">🔍</span><span>Ревизия</span></div>
+            <div class="nav-item" onclick="switchTab('branches', this)"><span class="nav-icon">🏬</span><span>Точки</span></div>
+            <div class="nav-item" onclick="switchTab('staff', this)"><span class="nav-icon">⚙️</span><span>Управление</span></div>
+        </div>
+    </div>
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); tg.ready();
+
+        const catalog = {
+            "💧 Жидкости": { "Podonki Alfa": 500, "Podonki Critical": 500, "Mad": 500, "Vlaga": 550, "BZ": 400 },
+            "🔋 Одноразки": { "Vozol Star 1800": 1800, "Vozol Rave 1800": 1800, "Lost Mary MO10000": 1200 },
+            "💨 Под-устройства": { "Vaporesso Xros 5": 2800, "Vaporesso Xros Cube": 2000, "Smoant Pasito 3": 4000 },
+            "⚙️ Комплектующие": { "Кар-дж Xros": 300, "Ис-р GeekVape P": 350, "Ис-р GeekVape Z": 450 }
+        };
+
+        let cart = {};
+        let currentCategory = Object.keys(catalog)[0];
+
+        const catList = document.getElementById('categories-list');
+        Object.keys(catalog).forEach((cat, idx) => {
+            const btn = document.createElement('button');
+            btn.className = `cat-btn ${idx === 0 ? 'active' : ''}`;
+            btn.innerText = cat;
+            btn.onclick = () => {
+                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active'); currentCategory = cat;
+                document.getElementById('search').value = ''; filterProducts();
+            };
+            catList.appendChild(btn);
+        });
+
+        const prodList = document.getElementById('products-list');
+        for (const [category, products] of Object.entries(catalog)) {
+            for (const [name, price] of Object.entries(products)) {
+                const item = document.createElement('div');
+                item.className = 'product-item p-item';
+                item.dataset.category = category; item.dataset.name = name.toLowerCase();
+                item.innerHTML = `
+                    <div class="product-info"><div class="product-name">${name}</div><div class="product-price">${price} ₽</div></div>
+                    <div class="counter">
+                        <button class="btn-count hidden" onclick="changeCount('${name.replace(/'/g, "\\'")}', ${price}, -1, this)">-</button>
+                        <span class="count-val hidden">0</span>
+                        <button class="btn-count add" onclick="changeCount('${name.replace(/'/g, "\\'")}', ${price}, 1, this)">+</button>
+                    </div>
+                `;
+                prodList.appendChild(item);
+            }
+        }
+
+        function filterProducts() {
+            const query = document.getElementById('search').value.toLowerCase();
+            document.querySelectorAll('.p-item').forEach(item => {
+                const sMatch = item.dataset.name.includes(query);
+                const cMatch = item.dataset.category === currentCategory;
+                if (query.length > 0) {
+                    if (sMatch) item.classList.remove('hidden'); else item.classList.add('hidden');
+                } else {
+                    if (cMatch) item.classList.remove('hidden'); else item.classList.add('hidden');
+                }
+            });
+        }
+        document.getElementById('search').addEventListener('input', filterProducts);
+
+        function changeCount(name, price, delta, btn) {
+            const counterDiv = btn.parentElement;
+            const minusBtn = counterDiv.children[0]; 
+            const countSpan = counterDiv.children[1];
+            
+            if (!cart[name]) cart[name] = { quantity: 0, price: price };
+            cart[name].quantity += delta;
+            
+            if (cart[name].quantity <= 0) {
+                delete cart[name]; countSpan.innerText = 0;
+                minusBtn.classList.add('hidden'); countSpan.classList.add('hidden');
+            } else {
+                countSpan.innerText = cart[name].quantity;
+                minusBtn.classList.remove('hidden'); countSpan.classList.remove('hidden');
+            }
+            updateMainButton();
+        }
+
+        function updateMainButton() {
+            let total = 0, count = 0;
+            for (const item of Object.values(cart)) { total += item.price * item.quantity; count += item.quantity; }
+            if (count > 0 && !document.getElementById('view-sales').classList.contains('hidden')) {
+                tg.MainButton.text = `Оформить продажу (${total} ₽)`; tg.MainButton.show();
+            } else { tg.MainButton.hide(); }
+        }
+
+        tg.MainButton.onClick(() => {
+            sendCMD("sale", cart);
+        });
+
+        function sendCMD(action, payload = {}) {
+            const dataObj = { action: action, payload: payload };
+            tg.switchInlineQuery(JSON.stringify(dataObj));
+            tg.close();
+        }
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            btn.classList.add('active'); updateMainButton();
+        }
+
+        function submitRevision() {
+            const cash = document.getElementById('rev-cash').value;
+            const comment = document.getElementById('rev-comment').value;
+            sendCMD("revision", { cash: cash, comment: comment });
+        }
+        function createBranch() {
+            const name = document.getElementById('new-branch-name').value;
+            sendCMD("create_branch", { name: name });
+        }
+
+        filterProducts();
+    </script>
+</body>
+</html>
