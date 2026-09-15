@@ -157,7 +157,13 @@
         
         async function loadDataFromServer() {
             try {
-                const response = await fetch(`${API_URL}/api/catalog`);
+                // ДОБАВЛЕН ЗАГОЛОВОК NGROK
+                const response = await fetch(`${API_URL}/api/catalog`, {
+                    headers: {
+                        "ngrok-skip-browser-warning": "true"
+                    }
+                });
+                
                 if(response.ok) {
                     catalog = await response.json();
                     initSalesTab();
@@ -176,9 +182,13 @@
         // Централизованная функция для отправки запросов без закрытия окна
         async function apiCall(action, payload) {
             try {
+                // ДОБАВЛЕН ЗАГОЛОВОК NGROK
                 const response = await fetch(`${API_URL}/api/action`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "ngrok-skip-browser-warning": "true"
+                    },
                     body: JSON.stringify({
                         action: action,
                         user_id: currentUserId,
