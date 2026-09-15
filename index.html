@@ -134,12 +134,10 @@
 
         const DIRECTOR_ID = 7562942752;
         
-        // Получаем ID из параметров ссылки (передано из бота) или из Telegram
         const urlParams = new URLSearchParams(window.location.search);
         const currentUserId = tg.initDataUnsafe?.user?.id || parseInt(urlParams.get('user')) || DIRECTOR_ID;
         const isDirector = currentUserId === DIRECTOR_ID;
         
-        // ВАШ NGROK
         const API_URL = "https://drew-matron-feminize.ngrok-free.dev";
 
         let catalog = [];
