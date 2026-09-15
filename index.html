@@ -1,4 +1,5 @@
-<!-- index.html -->
+
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -19,11 +20,13 @@
         .btn.success { background: var(--success-color); }
         .btn.danger { background: var(--danger-color); }
         input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: var(--bg-color); color: #fff; font-size: 15px; box-sizing: border-box; margin-top: 6px; margin-bottom: 12px; outline: none; }
-        
+
+        /* Навигация */
         .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: rgba(30,41,59,0.95); backdrop-filter: blur(10px); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; }
         .nav-item { color: var(--hint-color); font-size: 12px; cursor: pointer; text-align: center; }
         .nav-item.active { color: var(--accent-neon); font-weight: bold; }
-        
+
+        /* Каталог */
         .categories { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 12px; padding-bottom: 4px; }
         .categories::-webkit-scrollbar { display: none; }
         .cat-btn { background: var(--bg-color); color: var(--text-color); border: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 20px; font-size: 14px; white-space: nowrap; cursor: pointer; }
@@ -32,131 +35,103 @@
         .counter { display: flex; align-items: center; gap: 10px; }
         .btn-count { width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(255,255,255,0.1); color: #fff; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .btn-count.add { background: var(--accent-color); }
+        
+        /* Loading Overlay */
+        #loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.9); z-index: 999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        .spinner { border: 4px solid rgba(255,255,255,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: var(--accent-color); animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p>Загрузка данных...</p>
+    </div>
 
-    <!-- ================= СОТРУДНИК ================= -->
-    <div id="view-employee" class="hidden">
-        <!-- Вкладка 1: Касса и продажи -->
-        <div id="tab-emp-sales" class="emp-tab">
-            <h2>🛍 Продажи (Касса)</h2>
-            <div class="card">
-                <label>Торговая точка смены:</label>
-                <select id="emp-branch-select"></select>
-                <button class="btn success" onclick="openShift()">Открыть смену здесь</button>
-            </div>
-            <div class="card">
-                <input type="text" id="search" placeholder="Поиск товара..." oninput="filterCatalog()">
-                <div class="categories" id="categories-list"></div>
-                <div id="products-list"></div>
-            </div>
+    <!-- ВКЛАДКА 1: ПРОДАЖИ (КАТАЛОГ) -->
+    <div id="tab-sales" class="tab-content">
+        <h2>🛍 Каталог и Продажи</h2>
+        <div class="card">
+            <label>Торговая точка смены:</label>
+            <select id="sale-branch-select">
+                <option value="1">Главная точка (ID: 1)</option>
+            </select>
+            <button class="btn success" style="margin-bottom:12px;" onclick="openShift()">Открыть смену здесь</button>
         </div>
 
-        <!-- Вкладка 2: График и смены -->
-        <div id="tab-emp-schedule" class="emp-tab hidden">
-            <h2>📅 График и смены</h2>
-            <div class="card">
-                <label>Выбрать желаемую смену (видна только директору):</label>
-                <input type="date" id="desired-shift-date">
-                <button class="btn" onclick="requestShift()">Отправить желаемую смену</button>
-            </div>
-        </div>
-
-        <!-- Вкладка 3: Моя ЗП -->
-        <div id="tab-emp-salary" class="emp-tab hidden">
-            <h2>💰 Моя зарплата</h2>
-            <div class="card">
-                <p>Отработано смен: <b id="emp-stat-shifts">0</b></p>
-                <p>Продажи за месяц: <b id="emp-stat-sales">0 ₽</b></p>
-                <p>Расчетная зарплата: <b id="emp-stat-total" style="color:var(--success-color);">0 ₽</b></p>
-            </div>
-        </div>
-
-        <div class="nav-bar">
-            <div class="nav-item active" onclick="switchEmpTab('sales', this)">🛍<br>Касса</div>
-            <div class="nav-item" onclick="switchEmpTab('schedule', this)">📅<br>График</div>
-            <div class="nav-item" onclick="switchEmpTab('salary', this)">💰<br>Зарплата</div>
+        <div class="card">
+            <input type="text" id="search" placeholder="Поиск товара..." oninput="filterCatalog()">
+            <div class="categories" id="categories-list"></div>
+            <div id="products-list"></div>
         </div>
     </div>
 
+    <!-- ВКЛАДКА 2: ЗАРПЛАТА И УПРАВЛЕНИЕ -->
+    <div id="tab-salary" class="tab-content hidden">
+        <h2>💰 Зарплата и Управление</h2>
 
-    <!-- ================= ДИРЕКТОР ================= -->
-    <div id="view-director" class="hidden">
-        <!-- Вкладка 1: Точки и Сотрудники -->
-        <div id="tab-dir-staff" class="dir-tab">
-            <h2>🏬 Точки и Сотрудники</h2>
+        <!-- Блок сотрудника -->
+        <div id="emp-salary-block" class="card">
+            <h3>Мои финансы за месяц</h3>
+            <p>Отработано смен: <b id="e-shifts">0</b></p>
+            <p>Продажи: <b id="e-sales">0 ₽</b></p>
+            <p>Итого расчетных: <b id="e-total" style="color:var(--success-color);">0 ₽</b></p>
+        </div>
+
+        <!-- Блок директора -->
+        <div id="dir-salary-block" class="hidden">
+            <!-- Управление каталогом -->
             <div class="card">
-                <label>Новый магазин:</label>
-                <input type="text" id="new-branch-name" placeholder="Название точки">
+                <h3>📦 Добавить товар в каталог</h3>
+                <input type="text" id="new-item-cat" placeholder="Категория (например, Жидкости)">
+                <input type="text" id="new-item-name" placeholder="Название товара">
+                <input type="number" id="new-item-price" placeholder="Цена (₽)">
+                <input type="number" id="new-item-stock" placeholder="Количество на складе">
+                <button class="btn" onclick="addCatalogItem()">Добавить в базу</button>
+            </div>
+
+            <div class="card">
+                <h3>🏬 Управление точками</h3>
+                <input type="text" id="new-branch-name" placeholder="Название магазина">
                 <button class="btn" onclick="addBranch()">Добавить магазин</button>
                 <div id="branches-list" style="margin-top:10px;"></div>
             </div>
+
             <div class="card">
-                <h3>Настройка сотрудника и ЗП</h3>
-                <label>Telegram ID сотрудника:</label>
-                <input type="text" id="cfg-emp-id" placeholder="ID сотрудника">
+                <h3>👥 Сотрудники и условия ЗП</h3>
+                <label>Имя сотрудника / ID:</label>
+                <input type="text" id="cfg-emp-id" placeholder="Telegram ID сотрудника">
                 <label>Привязка к точке:</label>
-                <select id="cfg-branch-select"></select>
+                <select id="cfg-branch-select">
+                    <option value="1">Главная точка</option>
+                </select>
                 <label>Тип оплаты:</label>
                 <select id="cfg-type" onchange="toggleSalaryInputs()">
                     <option value="fixed">Фикс за смену</option>
                     <option value="shift_percent">Выход + Процент</option>
                 </select>
-                <div id="div-fixed"><label>Фикс за смену (₽):</label><input type="number" id="cfg-fixed" value="1500"></div>
-                <div id="div-percent" class="hidden"><label>Выход (₽):</label><input type="number" id="cfg-shift" value="1000"><label>Процент (%):</label><input type="number" id="cfg-per" value="5"></div>
-                <button class="btn success" onclick="saveEmployeeSettings()">Сохранить параметры сотрудника</button>
+                <div id="div-fixed"><label>Сумма за смену (₽):</label><input type="number" id="cfg-fixed" value="1500"></div>
+                <div id="div-percent" class="hidden"><label>Выход за смену (₽):</label><input type="number" id="cfg-shift" value="1000"><label>Процент от продаж (%):</label><input type="number" id="cfg-per" value="5"></div>
+                <button class="btn success" onclick="saveEmployeeSettings()">Сохранить настройки сотрудника</button>
             </div>
         </div>
+    </div>
 
-        <!-- Вкладка 2: График и Выплаты ЗП -->
-        <div id="tab-dir-pay" class="dir-tab hidden">
-            <h2>💰 График и Выплата ЗП</h2>
-            <div class="card">
-                <h3>Выплата с премиями и штрафами</h3>
-                <label>Telegram ID сотрудника:</label>
-                <input type="number" id="pay-emp-id" placeholder="ID сотрудника">
-                <label>Итоговая сумма:</label>
-                <input type="number" id="pay-total" placeholder="0">
-                <label>Премия (+):</label>
-                <input type="number" id="pay-bonus" value="0">
-                <label>Штраф (-):</label>
-                <input type="number" id="pay-penalty" value="0">
-                <label>Комментарий:</label>
-                <input type="text" id="pay-comment" placeholder="За что премия/штраф">
-                <button class="btn success" onclick="makePayout()">Провести выплату и записать в логи</button>
-            </div>
+    <!-- ВКЛАДКА 3: РЕВИЗИЯ -->
+    <div id="tab-revision" class="tab-content hidden">
+        <h2>🔍 Быстрая Ревизия</h2>
+        <div class="card">
+            <p style="color:var(--hint-color);">Укажите фактическое наличие товара на складе:</p>
+            <div id="revision-list"></div>
+            <button class="btn success" onclick="submitRevision()">Подтвердить и обновить остатки</button>
         </div>
+    </div>
 
-        <!-- Вкладка 3: Отчеты по датам -->
-        <div id="tab-dir-reports" class="dir-tab hidden">
-            <h2>📊 Отчеты за период</h2>
-            <div class="card">
-                <label>Начальная дата:</label>
-                <input type="date" id="rep-start">
-                <label>Конечная дата:</label>
-                <input type="date" id="rep-end">
-                <button class="btn" onclick="generateReport()">Сформировать отчет</button>
-                <div id="report-result" style="margin-top: 12px; font-size: 14px;"></div>
-            </div>
-        </div>
-
-        <!-- Вкладка 4: Ревизия -->
-        <div id="tab-dir-rev" class="dir-tab hidden">
-            <h2>🔍 Ревизия (По факту)</h2>
-            <div class="card">
-                <p style="color:var(--hint-color); font-size:14px;">Укажите фактическое наличие товаров на складе:</p>
-                <div id="revision-list"></div>
-                <button class="btn success" onclick="submitRevision()">Обновить остатки склада</button>
-            </div>
-        </div>
-
-        <div class="nav-bar">
-            <div class="nav-item active" onclick="switchDirTab('staff', this)">👥<br>Штат</div>
-            <div class="nav-item" onclick="switchDirTab('pay', this)">💰<br>ЗП</div>
-            <div class="nav-item" onclick="switchDirTab('reports', this)">📊<br>Отчеты</div>
-            <div class="nav-item" onclick="switchDirTab('rev', this)">🔍<br>Ревизия</div>
-        </div>
+    <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="switchTab('sales', this)">🛍<br>Продажи</div>
+        <div class="nav-item" onclick="switchTab('salary', this)">💰<br>Зарплата</div>
+        <div class="nav-item" onclick="switchTab('revision', this)">🔍<br>Ревизия</div>
     </div>
 
     <script>
@@ -164,51 +139,91 @@
         tg.expand(); tg.ready();
 
         const DIRECTOR_ID = 7562942752;
-        const userId = tg.initDataUnsafe?.user?.id;
-        const isDirector = (userId === DIRECTOR_ID);
+        const currentUserId = tg.initDataUnsafe?.user?.id || 0;
+        const isDirector = currentUserId === DIRECTOR_ID;
+        
+        // ВАШ НОВЫЙ АДРЕС NGROK
+        const API_URL = "https://drew-matron-feminize.ngrok-free.dev";
 
-        let branches = [{id: 1, name: "Центральный"}, {id: 2, name: "Северный"}];
-        let catalog = [
-            {id: 1, cat: "Жидкости", name: "Podonki Alfa", price: 500, stock: 15},
-            {id: 2, cat: "Одноразки", name: "Vozol Star 1800", price: 1800, stock: 8}
-        ];
+        let catalog = [];
         let cart = {};
-        let currentCategory = "Жидкости";
+        let currentCategory = "";
 
-        if (isDirector) {
-            document.getElementById('view-director').classList.remove('hidden');
-            renderDirectorData();
-        } else {
-            document.getElementById('view-employee').classList.remove('hidden');
-            renderEmployeeData();
+        // При загрузке страницы запрашиваем каталог с сервера
+        window.onload = () => {
+            if (isDirector) {
+                document.getElementById('dir-salary-block').classList.remove('hidden');
+            }
+            loadDataFromServer();
+        };
+        
+        async function loadDataFromServer() {
+            try {
+                const response = await fetch(`${API_URL}/api/catalog`);
+                if(response.ok) {
+                    catalog = await response.json();
+                    initSalesTab();
+                    initRevisionTab();
+                } else {
+                    alert("Не удалось загрузить каталог из базы.");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Ошибка подключения к боту. Убедитесь, что ngrok запущен.");
+            } finally {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }
         }
 
-        function sendData(action, payload) {
-            tg.sendData(JSON.stringify({ action, payload }));
-            tg.close();
+        // Централизованная функция для отправки запросов без закрытия окна
+        async function apiCall(action, payload) {
+            try {
+                const response = await fetch(`${API_URL}/api/action`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: action,
+                        user_id: currentUserId,
+                        payload: payload
+                    })
+                });
+                
+                const result = await response.json();
+                if(result.status === "success") {
+                    return result;
+                } else {
+                    alert("Ошибка: " + result.message);
+                    return null;
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Ошибка сети.");
+                return null;
+            }
         }
 
-        function switchEmpTab(name, el) {
-            document.querySelectorAll('.emp-tab').forEach(e => e.classList.add('hidden'));
-            document.getElementById(`tab-emp-${name}`).classList.remove('hidden');
-            document.querySelectorAll('#view-employee .nav-item').forEach(i => i.classList.remove('active'));
+        function switchTab(tabName, el) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
         }
 
-        function switchDirTab(name, el) {
-            document.querySelectorAll('.dir-tab').forEach(e => e.classList.add('hidden'));
-            document.getElementById(`tab-dir-${name}`).classList.remove('hidden');
-            document.querySelectorAll('#view-director .nav-item').forEach(i => i.classList.remove('active'));
-            el.classList.add('active');
-        }
-
-        // --- Сотрудник ---
-        function renderEmployeeData() {
-            document.getElementById('emp-branch-select').innerHTML = branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-            const cats = [...new Set(catalog.map(i => i.cat))];
+        // --- ПРОДАЖИ ---
+        function initSalesTab() {
+            if(catalog.length === 0) {
+                document.getElementById('products-list').innerHTML = "<p>Каталог пуст</p>";
+                return;
+            }
+            
+            // Получаем уникальные категории (map использует category из БД)
+            const cats = [...new Set(catalog.map(i => i.category))];
+            if(cats.length > 0) currentCategory = cats[0];
+            
             document.getElementById('categories-list').innerHTML = cats.map((c, idx) => `
                 <button class="cat-btn ${idx===0?'active':''}" onclick="selectCat('${c}', this)">${c}</button>
             `).join('');
+            
             filterCatalog();
         }
 
@@ -220,12 +235,13 @@
 
         function filterCatalog() {
             const query = document.getElementById('search').value.toLowerCase();
-            document.getElementById('products-list').innerHTML = catalog.filter(i => i.cat === currentCategory && i.name.toLowerCase().includes(query)).map(item => `
+            const list = document.getElementById('products-list');
+            list.innerHTML = catalog.filter(i => i.category === currentCategory && i.name.toLowerCase().includes(query)).map(item => `
                 <div class="product-item">
-                    <div><b>${item.name}</b><br><small>${item.price} ₽ | Склад: ${item.stock}</small></div>
+                    <div><b>${item.name}</b><br><small>${item.price} ₽ | Остаток: ${item.stock}</small></div>
                     <div class="counter">
                         <button class="btn-count" onclick="changeQty(${item.id}, -1)">-</button>
-                        <span id="qty-${item.id}">0</span>
+                        <span id="qty-${item.id}">${cart[item.id] ? cart[item.id].quantity : 0}</span>
                         <button class="btn-count add" onclick="changeQty(${item.id}, 1)">+</button>
                     </div>
                 </div>
@@ -233,61 +249,85 @@
         }
 
         function changeQty(id, delta) {
-            if(!cart[id]) cart[id] = { ...catalog.find(x => x.id === id), quantity: 0 };
-            cart[id].quantity += delta;
-            if(cart[id].quantity < 0) cart[id].quantity = 0;
-            document.getElementById(`qty-${id}`).innerText = cart[id].quantity;
+            if(!cart[id]) {
+                const product = catalog.find(x => x.id === id);
+                cart[id] = { ...product, quantity: 0 };
+            }
             
+            cart[id].quantity += delta;
+            
+            // Проверка на остатки (нельзя продать больше чем есть)
+            const maxStock = catalog.find(x => x.id === id).stock;
+            if(cart[id].quantity > maxStock) cart[id].quantity = maxStock;
+            if(cart[id].quantity < 0) cart[id].quantity = 0;
+            
+            if(cart[id].quantity === 0) delete cart[id];
+            
+            // Обновляем текст на экране
+            const el = document.getElementById(`qty-${id}`);
+            if(el) el.innerText = cart[id] ? cart[id].quantity : 0;
+            
+            updateMainButton();
+        }
+
+        function updateMainButton() {
             let total = 0, count = 0;
             for(let i in cart) { total += cart[i].price * cart[i].quantity; count += cart[i].quantity; }
             if(count > 0) {
-                tg.MainButton.text = `Пробить товары (${total} ₽)`;
+                tg.MainButton.text = `Провести продажу (${total} ₽)`;
                 tg.MainButton.show();
             } else { tg.MainButton.hide(); }
         }
 
-        tg.MainButton.onClick(() => {
-            const branch_id = document.getElementById('emp-branch-select').value;
-            sendData("sale_report", { branch_id: parseInt(branch_id), cart });
+        // ОБРАБОТКА ПРОДАЖИ БЕЗ ЗАКРЫТИЯ MINI APP
+        tg.MainButton.onClick(async () => {
+            const branch_id = parseInt(document.getElementById('sale-branch-select').value);
+            tg.MainButton.showProgress();
+            
+            const res = await apiCall("sale_report", { branch_id: branch_id, cart: cart });
+            
+            tg.MainButton.hideProgress();
+            
+            if(res) {
+                alert(`Продажа успешно проведена! Сумма: ${res.total_sum} ₽`);
+                cart = {}; // Очищаем корзину
+                tg.MainButton.hide();
+                loadDataFromServer(); // Перезагружаем каталог для обновления остатков
+            }
         });
 
-        function openShift() {
-            const branch_id = document.getElementById('emp-branch-select').value;
-            sendData("open_shift", { branch_id: parseInt(branch_id) });
+        async function openShift() {
+            const branch_id = parseInt(document.getElementById('sale-branch-select').value);
+            const res = await apiCall("open_shift", { branch_id: branch_id });
+            if(res) alert("Смена успешно открыта!");
         }
 
-        function requestShift() {
-            const date = document.getElementById('desired-shift-date').value;
-            if(!date) return alert("Выберите дату!");
-            sendData("want_shift", { date });
-        }
-
-        // --- Директор ---
-        function renderDirectorData() {
-            document.getElementById('branches-list').innerHTML = branches.map(b => `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                    <span>▪️ ${b.name}</span>
-                    <button class="btn danger" style="width:auto; padding:6px 12px; margin:0;" onclick="deleteBranch(${b.id})">Удалить</button>
-                </div>
-            `).join('');
-            document.getElementById('cfg-branch-select').innerHTML = branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+        // --- УПРАВЛЕНИЕ ДИРЕКТОРА ---
+        
+        async function addCatalogItem() {
+            const category = document.getElementById('new-item-cat').value;
+            const name = document.getElementById('new-item-name').value;
+            const price = parseFloat(document.getElementById('new-item-price').value);
+            const stock = parseInt(document.getElementById('new-item-stock').value);
             
-            document.getElementById('revision-list').innerHTML = catalog.map(item => `
-                <div style="margin-bottom:10px;">
-                    <label>${item.name} (Учет: ${item.stock})</label>
-                    <input type="number" id="rev-${item.id}" value="${item.stock}">
-                </div>
-            `).join('');
+            if(!category || !name || !price) return alert("Заполните все поля товара!");
+            
+            const res = await apiCall("add_catalog_item", { category, name, price, stock });
+            if(res) {
+                alert("Товар добавлен!");
+                // Очищаем поля
+                document.getElementById('new-item-name').value = "";
+                document.getElementById('new-item-price').value = "";
+                // Перезагружаем каталог с базы
+                loadDataFromServer();
+            }
         }
 
-        function addBranch() {
+        async function addBranch() {
             const name = document.getElementById('new-branch-name').value;
-            if(!name) return alert("Введите название!");
-            sendData("add_branch", { name });
-        }
-
-        function deleteBranch(branch_id) {
-            sendData("delete_branch", { branch_id });
+            if(!name) return;
+            const res = await apiCall("add_branch", { name });
+            if(res) alert("Магазин добавлен!");
         }
 
         function toggleSalaryInputs() {
@@ -301,53 +341,52 @@
             }
         }
 
-        function saveEmployeeSettings() {
+        async function saveEmployeeSettings() {
             const emp_id = parseInt(document.getElementById('cfg-emp-id').value);
             const branch_id = parseInt(document.getElementById('cfg-branch-select').value);
             const salary_type = document.getElementById('cfg-type').value;
             let fixed = 0, percent = 0;
-            
+
             if(salary_type === 'fixed') {
                 fixed = parseFloat(document.getElementById('cfg-fixed').value) || 0;
             } else {
                 fixed = parseFloat(document.getElementById('cfg-shift').value) || 0;
                 percent = parseFloat(document.getElementById('cfg-per').value) || 0;
             }
-            if(!emp_id) return alert("Введите ID сотрудника!");
-            sendData("save_employee_settings", { emp_id, branch_id, salary_type, fixed, percent });
+            if(!emp_id) return alert("Введите Telegram ID сотрудника!");
+            
+            const res = await apiCall("save_employee_settings", { emp_id, branch_id, salary_type, fixed, percent });
+            if(res) alert("Настройки сотрудника сохранены!");
         }
 
-        function makePayout() {
-            const emp_id = parseInt(document.getElementById('pay-emp-id').value);
-            const total = parseFloat(document.getElementById('pay-total').value) || 0;
-            const bonus = parseFloat(document.getElementById('pay-bonus').value) || 0;
-            const penalty = parseFloat(document.getElementById('pay-penalty').value) || 0;
-            const comment = document.getElementById('pay-comment').value;
-            if(!emp_id) return alert("Введите ID сотрудника!");
-            sendData("make_payout", { emp_id, total, bonus, penalty, comment });
-        }
-
-        function generateReport() {
-            const start = document.getElementById('rep-start').value;
-            const end = document.getElementById('rep-end').value;
-            if(!start || !end) return alert("Выберите диапазон дат!");
-            // Вывод демо-структуры отчета в интерфейсе Mini App
-            document.getElementById('report-result').innerHTML = `
-                <div style="background:var(--bg-color); padding:10px; border-radius:8px; margin-top:8px;">
-                    <b>Период:</b> с ${start} по ${end}<br>
-                    <b>Выручка:</b> расчет по базе<br>
-                    <b>Выплачено ЗП:</b> расчет по базе
+        // --- РЕВИЗИЯ ---
+        function initRevisionTab() {
+            const revDiv = document.getElementById('revision-list');
+            if(catalog.length === 0) {
+                revDiv.innerHTML = "<p>Каталог пуст</p>";
+                return;
+            }
+            
+            revDiv.innerHTML = catalog.map(item => `
+                <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <label style="flex:1;">${item.name} <br><small style="color:var(--hint-color)">Учет: ${item.stock} шт.</small></label>
+                    <input type="number" id="rev-item-${item.id}" value="${item.stock}" style="width:80px; margin:0;">
                 </div>
-            `;
+            `).join('');
         }
 
-        function submitRevision() {
+        async function submitRevision() {
             let updates = {};
             catalog.forEach(item => {
-                const val = document.getElementById(`rev-${item.id}`).value;
+                const val = document.getElementById(`rev-item-${item.id}`).value;
                 updates[item.id] = parseInt(val) || 0;
             });
-            sendData("revision_fact", { updates });
+            
+            const res = await apiCall("revision_fact", { updates });
+            if(res) {
+                alert("Остатки успешно обновлены!");
+                loadDataFromServer();
+            }
         }
     </script>
 </body>
