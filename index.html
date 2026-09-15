@@ -19,12 +19,10 @@
         .btn.danger { background: var(--danger-color); }
         input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: var(--bg-color); color: #fff; font-size: 15px; box-sizing: border-box; margin-top: 6px; margin-bottom: 12px; outline: none; }
 
-        /* Навигация */
         .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: rgba(30,41,59,0.95); backdrop-filter: blur(10px); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); z-index: 100; }
         .nav-item { color: var(--hint-color); font-size: 12px; cursor: pointer; text-align: center; }
         .nav-item.active { color: var(--accent-neon); font-weight: bold; }
 
-        /* Каталог */
         .categories { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 12px; padding-bottom: 4px; }
         .categories::-webkit-scrollbar { display: none; }
         .cat-btn { background: var(--bg-color); color: var(--text-color); border: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 20px; font-size: 14px; white-space: nowrap; cursor: pointer; }
@@ -34,7 +32,6 @@
         .btn-count { width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(255,255,255,0.1); color: #fff; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .btn-count.add { background: var(--accent-color); }
         
-        /* Loading Overlay */
         #loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.9); z-index: 999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .spinner { border: 4px solid rgba(255,255,255,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: var(--accent-color); animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -78,7 +75,6 @@
 
         <!-- Блок директора -->
         <div id="dir-salary-block" class="hidden">
-            <!-- Управление каталогом -->
             <div class="card">
                 <h3>📦 Добавить товар в каталог</h3>
                 <input type="text" id="new-item-cat" placeholder="Категория (например, Жидкости)">
@@ -137,17 +133,19 @@
         tg.expand(); tg.ready();
 
         const DIRECTOR_ID = 7562942752;
-        const currentUserId = tg.initDataUnsafe?.user?.id || 0;
+        
+        // Получаем ID из параметров ссылки (передано из бота) или из Telegram
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentUserId = tg.initDataUnsafe?.user?.id || parseInt(urlParams.get('user')) || DIRECTOR_ID;
         const isDirector = currentUserId === DIRECTOR_ID;
         
-        // ВАШ НОВЫЙ АДРЕС NGROK
+        // ВАШ NGROK
         const API_URL = "https://drew-matron-feminize.ngrok-free.dev";
 
         let catalog = [];
         let cart = {};
         let currentCategory = "";
 
-        // При загрузке страницы запрашиваем каталог с сервера
         window.onload = () => {
             if (isDirector) {
                 document.getElementById('dir-salary-block').classList.remove('hidden');
@@ -157,7 +155,6 @@
         
         async function loadDataFromServer() {
             try {
-                // ДОБАВЛЕН ЗАГОЛОВОК NGROK
                 const response = await fetch(`${API_URL}/api/catalog`, {
                     headers: {
                         "ngrok-skip-browser-warning": "true"
@@ -179,10 +176,8 @@
             }
         }
 
-        // Централизованная функция для отправки запросов без закрытия окна
         async function apiCall(action, payload) {
             try {
-                // ДОБАВЛЕН ЗАГОЛОВОК NGROK
                 const response = await fetch(`${API_URL}/api/action`, {
                     method: "POST",
                     headers: { 
@@ -217,14 +212,11 @@
             el.classList.add('active');
         }
 
-        // --- ПРОДАЖИ ---
         function initSalesTab() {
             if(catalog.length === 0) {
                 document.getElementById('products-list').innerHTML = "<p>Каталог пуст</p>";
                 return;
             }
-            
-            // Получаем уникальные категории (map использует category из БД)
             const cats = [...new Set(catalog.map(i => i.category))];
             if(cats.length > 0) currentCategory = cats[0];
             
@@ -261,20 +253,15 @@
                 const product = catalog.find(x => x.id === id);
                 cart[id] = { ...product, quantity: 0 };
             }
-            
             cart[id].quantity += delta;
             
-            // Проверка на остатки (нельзя продать больше чем есть)
             const maxStock = catalog.find(x => x.id === id).stock;
             if(cart[id].quantity > maxStock) cart[id].quantity = maxStock;
             if(cart[id].quantity < 0) cart[id].quantity = 0;
-            
             if(cart[id].quantity === 0) delete cart[id];
             
-            // Обновляем текст на экране
             const el = document.getElementById(`qty-${id}`);
             if(el) el.innerText = cart[id] ? cart[id].quantity : 0;
-            
             updateMainButton();
         }
 
@@ -287,20 +274,18 @@
             } else { tg.MainButton.hide(); }
         }
 
-        // ОБРАБОТКА ПРОДАЖИ БЕЗ ЗАКРЫТИЯ MINI APP
         tg.MainButton.onClick(async () => {
             const branch_id = parseInt(document.getElementById('sale-branch-select').value);
             tg.MainButton.showProgress();
             
             const res = await apiCall("sale_report", { branch_id: branch_id, cart: cart });
-            
             tg.MainButton.hideProgress();
             
             if(res) {
                 alert(`Продажа успешно проведена! Сумма: ${res.total_sum} ₽`);
-                cart = {}; // Очищаем корзину
+                cart = {}; 
                 tg.MainButton.hide();
-                loadDataFromServer(); // Перезагружаем каталог для обновления остатков
+                loadDataFromServer(); 
             }
         });
 
@@ -310,8 +295,6 @@
             if(res) alert("Смена успешно открыта!");
         }
 
-        // --- УПРАВЛЕНИЕ ДИРЕКТОРА ---
-        
         async function addCatalogItem() {
             const category = document.getElementById('new-item-cat').value;
             const name = document.getElementById('new-item-name').value;
@@ -323,10 +306,8 @@
             const res = await apiCall("add_catalog_item", { category, name, price, stock });
             if(res) {
                 alert("Товар добавлен!");
-                // Очищаем поля
                 document.getElementById('new-item-name').value = "";
                 document.getElementById('new-item-price').value = "";
-                // Перезагружаем каталог с базы
                 loadDataFromServer();
             }
         }
@@ -367,14 +348,12 @@
             if(res) alert("Настройки сотрудника сохранены!");
         }
 
-        // --- РЕВИЗИЯ ---
         function initRevisionTab() {
             const revDiv = document.getElementById('revision-list');
             if(catalog.length === 0) {
                 revDiv.innerHTML = "<p>Каталог пуст</p>";
                 return;
             }
-            
             revDiv.innerHTML = catalog.map(item => `
                 <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
                     <label style="flex:1;">${item.name} <br><small style="color:var(--hint-color)">Учет: ${item.stock} шт.</small></label>
